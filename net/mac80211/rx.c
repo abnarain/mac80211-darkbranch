@@ -371,8 +371,10 @@ ieee80211_add_rx_radiotap_header_jigs(struct ieee80211_local *local,
 	struct jigdump_hdr * jig;
 	jig= (struct jigdump_hdr*)skb_push(skb, sizeof(struct jigdump_hdr));
 	memset(jig, 0, sizeof(struct jigdump_hdr));
+	const int jhsz = sizeof(struct jigdump_hdr);
+
  	jig-> version_ = JIGDUMP_HDR_VERSION; 
- 	jig->hdrlen_ = 98;
+ 	jig->hdrlen_ = jhsz;
  	jig->status_ = status->rs_status;
  	jig->phyerr_ = status->rs_phy_err;
 	jig->rssi_ = status->rssi;
