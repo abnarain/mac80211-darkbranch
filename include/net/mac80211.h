@@ -668,6 +668,7 @@ enum mac80211_rx_flags {
  * @flag: %RX_FLAG_*
  * @rx_flags: internal RX flags for mac80211
  */
+#define JIGS
 struct ieee80211_rx_status {
 	u64 mactime;
 	enum ieee80211_band band;
@@ -677,6 +678,11 @@ struct ieee80211_rx_status {
 	int rate_idx;
 	int flag;
 	unsigned int rx_flags;
+#ifdef JIGS 
+	int8_t rssi;
+	u8 rs_phy_err;
+	u8 rs_status;
+	u16 rs_data_len;
 };
 
 /**
