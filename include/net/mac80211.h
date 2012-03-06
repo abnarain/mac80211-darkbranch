@@ -683,6 +683,7 @@ struct ieee80211_rx_status {
 	u8 rs_phy_err;
 	u8 rs_status;
 	u16 rs_data_len;
+#endif
 };
 
 /**
