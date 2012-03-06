@@ -373,17 +373,18 @@ ieee80211_add_rx_radiotap_header_jigs(struct ieee80211_local *local,
 	memset(jig, 0, sizeof(struct jigdump_hdr));
  	jig-> version_ = JIGDUMP_HDR_VERSION; 
  	jig->hdrlen_ = 98;
- 	jig->status_ = 97;
- 	jig->phyerr_ = 96;
-	jig->rssi_ = 95;
+ 	jig->status_ = status->rs_status;
+ 	jig->phyerr_ = status->rs_phy_err;
+	jig->rssi_ = status->rssi;
  	jig->flags_ = 94;
  	jig->channel_ = 93;
  	jig->rate_ = 92;
- 	jig->caplen_ = 91;
+ 	jig->caplen_ = status->rs_data_len;
  	jig->snaplen_ = 90;
  	jig->prev_errs_ = 88;
- 	jig->mac_time_= 86; //epoch time when first bit arrives mac
+ 	jig->mac_time_= status->mactime; //epoch time when first bit arrives mac
  	jig->fcs_ = 85;
+
 	/* radiotap header, set always present flags 
 	rthdr->it_present =
 		cpu_to_le32((1 << IEEE80211_RADIOTAP_FLAGS) |
@@ -3241,6 +3242,7 @@ void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb)
 	if (WARN_ON(!local->started))
 		goto drop;
 
+#ifndef JIGS
 	if (likely(!(status->flag & RX_FLAG_FAILED_PLCP_CRC))) {
 		/*
 		 * Validate the rate, unless a PLCP error means that
@@ -3273,7 +3275,7 @@ void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb)
 			rate = &sband->bitrates[status->rate_idx];
 		}
 	}
-
+#endif
 	status->rx_flags = 0;
 
 	/*
