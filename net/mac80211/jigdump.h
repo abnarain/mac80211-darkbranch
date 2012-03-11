@@ -36,7 +36,7 @@ struct jigdump_hdr
 	u_int16_t caplen_;
 	u_int16_t snaplen_;
 
-	int antenna_;
+	u_int8_t antenna_;
 	u_int16_t prev_errs_;
 
 	u_int64_t mac_time_; //epoch time when first bit arrives mac
