@@ -32,6 +32,7 @@ struct jigdump_hdr
 	u_int8_t flags_;
 	u_int8_t channel_;
 	u_int8_t rate_;
+	u_int8_t rate_idx_;
 
 	u_int16_t caplen_;
 	u_int16_t snaplen_;
