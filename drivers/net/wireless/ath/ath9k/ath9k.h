@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/leds.h>
 #include <linux/completion.h>
-
+#define JIGS
 #include "debug.h"
 #include "common.h"
 
@@ -325,7 +325,11 @@ void ath_flushrecv(struct ath_softc *sc);
 u32 ath_calcrxfilter(struct ath_softc *sc);
 int ath_rx_init(struct ath_softc *sc, int nbufs);
 void ath_rx_cleanup(struct ath_softc *sc);
+#ifndef JIGS
 int ath_rx_tasklet(struct ath_softc *sc, int flush, bool hp);
+#else
+int ath_rx_tasklet_jigs(struct ath_softc *sc, int flush, bool hp);
+#endif
 struct ath_txq *ath_txq_setup(struct ath_softc *sc, int qtype, int subtype);
 void ath_tx_cleanupq(struct ath_softc *sc, struct ath_txq *txq);
 bool ath_drain_all_txq(struct ath_softc *sc, bool retry_tx);
