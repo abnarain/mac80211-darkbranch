@@ -245,9 +245,21 @@ static bool ath_prepare_reset(struct ath_softc *sc, bool retry_tx, bool flush)
 		ret = false;
 
 	if (!flush) {
-		if (ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+		if (ah->caps.hw_caps & ATH9K_HW_CAP_EDMA){
+#ifndef JIGS
 			ath_rx_tasklet(sc, 0, true);
+#else
+			ath_rx_tasklet_jigs(sc, 0, true);
+
+#endif
+}
+#ifndef JIGS
 		ath_rx_tasklet(sc, 0, false);
+#else 
+		ath_rx_tasklet_jigs(sc, 0, false);
+
+#endif
+
 	} else {
 		ath_flushrecv(sc);
 	}
@@ -706,10 +718,19 @@ void ath9k_tasklet(unsigned long data)
 	if (status & rxmask) {
 		/* Check for high priority Rx first */
 		if ((ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) &&
-		    (status & ATH9K_INT_RXHP))
+		    (status & ATH9K_INT_RXHP)){
+#ifndef JIGS
 			ath_rx_tasklet(sc, 0, true);
+#else
+			ath_rx_tasklet_jigs(sc, 0, true);
 
+#endif
+		}
+#ifndef JIGS
 		ath_rx_tasklet(sc, 0, false);
+#else
+		ath_rx_tasklet_jigs(sc, 0, false);
+#endif
 	}
 
 	if (status & ATH9K_INT_TX) {
