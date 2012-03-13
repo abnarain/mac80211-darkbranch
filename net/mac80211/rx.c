@@ -372,21 +372,30 @@ ieee80211_add_rx_radiotap_header_jigs(struct ieee80211_local *local,
 	jig= (struct jigdump_hdr*)skb_push(skb, sizeof(struct jigdump_hdr));
 	memset(jig, 0, sizeof(struct jigdump_hdr));
 	const int jhsz = sizeof(struct jigdump_hdr);
-
+	const u16 caplen = status->rs_data_len ;
+	const u16 snaplen =   caplen > JIGDUMP_HDR_SNAPLEN ?  JIGDUMP_HDR_SNAPLEN : caplen;
  	jig-> version_ = JIGDUMP_HDR_VERSION; 
  	jig->hdrlen_ = jhsz;
  	jig->status_ = status->rs_status;
  	jig->phyerr_ = status->rs_phy_err;
 	jig->rssi_ = status->rssi;
- 	jig->flags_ = 94;
- 	jig->channel_ = 93;
- 	jig->rate_ = 92;
+ 	jig->flags_ = status->flag;
+ 	jig->channel_ = status->freq; // convert in userland 
  	jig->caplen_ = status->rs_data_len;
- 	jig->snaplen_ = 90;
- 	jig->prev_errs_ = 88;
+ 	jig->snaplen_ = snaplen; // how to use these three fields ? 
+ 	jig->prev_errs_ = 95;
+ 	jig->fcs_ = 94;
  	jig->mac_time_= status->mactime; //epoch time when first bit arrives mac
- 	jig->fcs_ = 85;
-
+	jig->antenna_= status->antenna;
+	jig->rate_idx_= 91;
+	jig->rate_ = 90;
+	if (status->flag & RX_FLAG_HT) {
+	//HT packet hence will have a rate index
+          jig->rate_idx_ = 1; //status->rate_idx;
+        } else {
+       	  jig->rate_ = 1; // rate->bitrate / 5;
+        }
+ 
 	/* radiotap header, set always present flags 
 	rthdr->it_present =
 		cpu_to_le32((1 << IEEE80211_RADIOTAP_FLAGS) |
