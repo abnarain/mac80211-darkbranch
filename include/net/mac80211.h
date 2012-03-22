@@ -680,8 +680,8 @@ struct ieee80211_rx_status {
 	unsigned int rx_flags;
 #ifdef JIGS 
 	int8_t rssi;
-	u8 rs_phy_err;
-	u8 rs_status;
+	u32 count_phy_err;
+//	u16 count_l_z;
 	u16 rs_data_len;
 #endif
 };

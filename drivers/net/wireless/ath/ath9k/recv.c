@@ -17,9 +17,11 @@
 #include <linux/dma-mapping.h>
 #include "ath9k.h"
 #include "ar9003_mac.h"
-
+#define JIGS 
 #define SKB_CB_ATHBUF(__skb)	(*((struct ath_buf **)__skb->cb))
 
+//static u16 c_l_z=0;
+static unsigned int  c_p_e=0;
 static inline bool ath_is_alt_ant_ratio_better(int alt_ratio, int maxdelta,
 					       int mindelta, int main_rssi_avg,
 					       int alt_rssi_avg, int pkt_count)
@@ -120,9 +122,14 @@ static void ath_opmode_init(struct ath_softc *sc)
 	struct ath_common *common = ath9k_hw_common(ah);
 
 	u32 rfilt, mfilt[2];
-
+// JIGS TODO: fix if not working with rfilter .. 
 	/* configure rx filter */
 	rfilt = ath_calcrxfilter(sc);
+	
+        if (rfilt & ATH9K_RX_FILTER_PHYERR)
+                printk("abhinav : ath_opmode_init() : the rx filter are set \n");
+        else
+                printk("abhinav : ath_opmode_init() : the rx filter are not set  \n");
 	ath9k_hw_setrxfilter(ah, rfilt);
 
 	/* configure bssid mask */
@@ -428,13 +435,15 @@ u32 ath_calcrxfilter(struct ath_softc *sc)
 #define	RX_FILTER_PRESERVE (ATH9K_RX_FILTER_PHYERR | ATH9K_RX_FILTER_PHYRADAR)
 
 	u32 rfilt;
-
+// JIGS  abhinav: added the phyerr filter  
 	rfilt = (ath9k_hw_getrxfilter(sc->sc_ah) & RX_FILTER_PRESERVE)
 		| ATH9K_RX_FILTER_UCAST | ATH9K_RX_FILTER_BCAST
-		| ATH9K_RX_FILTER_MCAST;
+		| ATH9K_RX_FILTER_MCAST | ATH9K_RX_FILTER_PHYERR ;
 
 	if (sc->rx.rxfilter & FIF_PROBE_REQ)
 		rfilt |= ATH9K_RX_FILTER_PROBEREQ;
+
+	
 
 	/*
 	 * Set promiscuous mode when FIF_PROMISC_IN_BSS is enabled for station
@@ -467,7 +476,6 @@ u32 ath_calcrxfilter(struct ath_softc *sc)
 			rfilt |= ATH9K_RX_FILTER_PROM;
 		rfilt |= ATH9K_RX_FILTER_MCAST_BCAST_ALL;
 	}
-
 	return rfilt;
 
 #undef RX_FILTER_PRESERVE
@@ -839,16 +847,20 @@ static bool ath9k_rx_accept(struct ath_common *common,
 		!(rx_stats->rs_status &
 		(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_CRC | ATH9K_RXERR_MIC));
 
+
 	if (!rx_stats->rs_datalen)
 		return false;
+	
         /*
          * rs_status follows rs_datalen so if rs_datalen is too large
          * we can take a hint that hardware corrupted it, so ignore
          * those frames.
          */
+
+	
 	if (rx_stats->rs_datalen > (common->rx_bufsize - rx_status_len))
 		return false;
-
+	
 	/* Only use error bits from the last fragment */
 	if (rx_stats->rs_more)
 		return true;
@@ -869,8 +881,15 @@ static bool ath9k_rx_accept(struct ath_common *common,
 			rxs->flag |= RX_FLAG_FAILED_FCS_CRC;
 			mic_error = false;
 		}
-		if (rx_stats->rs_status & ATH9K_RXERR_PHY)
-			return false;
+
+		if (rx_stats->rs_status & ATH9K_RXERR_PHY){
+
+			static int ast=0;
+			if(ast<2) {	
+			printk("abhinav : %s phy return false %d \n ",__func__,ast++);//	return false;
+		}
+
+		}
 
 		if (rx_stats->rs_status & ATH9K_RXERR_DECRYPT) {
 			*decrypt_error = true;
@@ -885,8 +904,12 @@ static bool ath9k_rx_accept(struct ath_common *common,
 		if (ah->is_monitoring) {
 			if (rx_stats->rs_status &
 			    ~(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_MIC |
-			      ATH9K_RXERR_CRC))
-				return false;
+			      ATH9K_RXERR_CRC| ATH9K_RXERR_PHY)){
+				static int ast2=0;
+				if(ast2<2)
+					printk("abhinav: monitor mode \n");
+				return false; // PHY for JIGS
+				}
 		} else {
 			if (rx_stats->rs_status &
 			    ~(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_MIC)) {
@@ -1007,9 +1030,21 @@ static int ath9k_rx_skb_preprocess(struct ath_common *common,
 				   bool *decrypt_error)
 {
 	struct ath_hw *ah = common->ah;
-
 	memset(rx_status, 0, sizeof(struct ieee80211_rx_status));
-
+	static int ast2l=0;
+	if (rx_stats->rs_status & ATH9K_RXERR_PHY){
+            static int ast2k=0;
+            if(ast2k<3) {
+                printk("abhinav : %s phy return false %d %d\n ",__func__, !rx_stats->rs_datalen, ast2k++);//        return false;
+            }
+         }else {
+	    if(ast2l<3){
+		if(!rx_stats->rs_datalen){
+			printk("abhinav : no phy error but datalen=0 %d\n",ast2l++);
+		}
+	    }
+	}
+	
 	/*
 	 * everything but the rate is checked here, the rate check is done
 	 * separately to avoid doing two lookups for a rate for each frame.
@@ -2065,6 +2100,7 @@ int ath_rx_tasklet_jigs(struct ath_softc *sc, int flush, bool hp)
 		rxs = IEEE80211_SKB_RXCB(hdr_skb);
 
 		ath_debug_stat_rx(sc, &rs);
+		
 		/*
 		 * If we're asked to flush receive queue, directly
 		 * chain it back at the queue without processing it.
@@ -2086,13 +2122,11 @@ int ath_rx_tasklet_jigs(struct ath_softc *sc, int flush, bool hp)
 		    unlikely(tsf_lower - rs.rs_tstamp > 0x10000000))
 			rxs->mactime += 0x100000000ULL;
 
+
 		rxs->rssi=rs.rs_rssi;
 	        rxs->rs_data_len=rs.rs_datalen;
-	        rxs-> rs_status= rs.rs_status;
-	        rxs->rs_phy_err= rs.rs_phyerr;
-
-
-
+	        rxs->count_phy_err = sc->debug.stats.rxstats.phy_err ; //rs.rs_phyerr ;
+		
 		/* Ensure we always have an skb to requeue once we are done
 		 * processing the current buffer's skb */
 		requeue_skb = ath_rxbuf_alloc(common, common->rx_bufsize, GFP_ATOMIC);

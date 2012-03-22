@@ -60,7 +60,6 @@ static inline int should_drop_frame(struct sk_buff *skb,
 {
 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
-
 	if (status->flag & (RX_FLAG_FAILED_FCS_CRC | RX_FLAG_FAILED_PLCP_CRC))
 		return 1;
 	if (unlikely(skb->len < 16 + present_fcs_len))
@@ -270,10 +269,10 @@ ieee80211_rx_monitor(struct ieee80211_local *local, struct sk_buff *origskb,
 		origskb = NULL;
 
 
-	static int ab2=0;
-	if(ab2<2){
-	printk(KERN_INFO " abhinav: if should drop frame %d , %d\n",present_fcs_len, ab2++);	
-	}
+		static int ab2=0;
+		if(ab2<2){
+			printk(KERN_INFO " abhinav: if should drop frame %d , %d\n",present_fcs_len, ab2++);	
+		}
 		/*
 		 * This shouldn't trigger often because most devices have an
 		 * RX header they pull before we get here, and that should
@@ -292,10 +291,10 @@ ieee80211_rx_monitor(struct ieee80211_local *local, struct sk_buff *origskb,
 		 * and FCS from the original.
 		 */
 
-	static int ab3=0;
-	if(ab3<2){
-	printk(KERN_INFO " abhinav: else should drop frame %d , %d\n",present_fcs_len,ab3++);	
-	}
+		static int ab3=0;
+		if(ab3<2){
+			printk(KERN_INFO " abhinav: else should drop frame %d , %d\n",present_fcs_len,ab3++);	
+		}
 		skb = skb_copy_expand(origskb, needed_headroom, 0, GFP_ATOMIC);
 
 		origskb = remove_monitor_info(local, origskb);
@@ -376,25 +375,49 @@ ieee80211_add_rx_radiotap_header_jigs(struct ieee80211_local *local,
 	const u16 snaplen =   caplen > JIGDUMP_HDR_SNAPLEN ?  JIGDUMP_HDR_SNAPLEN : caplen;
  	jig-> version_ = JIGDUMP_HDR_VERSION; 
  	jig->hdrlen_ = jhsz;
- 	jig->status_ = status->rs_status;
- 	jig->phyerr_ = status->rs_phy_err;
+// 	jig->status_ = status->count_l_z;
+ 	jig->phyerr_ = status->count_phy_err;
 	jig->rssi_ = status->rssi;
  	jig->flags_ = status->flag;
- 	jig->channel_ = status->freq; // convert in userland 
- 	jig->caplen_ = status->rs_data_len;
+/*
+        if (status->band == IEEE80211_BAND_5GHZ){
+//           	jig->channel_ =      IEEE80211_CHAN_OFDM | IEEE80211_CHAN_5GHZ;                                   
+		static int ch=0;
+		if( ch<2)
+			printk(" was in band=%x ,%d",  IEEE80211_CHAN_OFDM | IEEE80211_CHAN_5GHZ, ch++);
+	}
+        else if (status->flag & RX_FLAG_HT)
+	;
+  //             	jig->channel_ =  IEEE80211_CHAN_DYN | IEEE80211_CHAN_2GHZ ;                               
+        else if (rate->flags & IEEE80211_RATE_ERP_G){
+         //      	jig->channel_ = IEEE80211_CHAN_OFDM | IEEE80211_CHAN_2GHZ ;                                  
+		static int ch1=0;
+	                if( ch1<2)
+                        printk(" was in band=%x ,%d",  IEEE80211_CHAN_OFDM | IEEE80211_CHAN_5GHZ, ch1++);
+	
+	}
+        else
+	;
+*/
+           //    	jig->channel_ = IEEE80211_CHAN_CCK | IEEE80211_CHAN_2GHZ;
+ 
+	jig->freq_ = status->freq; 
+	jig->channel_ = 99 ;
+ 	if (status->flag & RX_FLAG_HT) {
+	 //HT packet hence will have a rate index
+	   //jig->rate_=0;
+	   jig->rate_idx_ = 1 ; //status->rate_idx;
+	 } else {
+	//*pos = rate->bitrate / 4;
+//	   jig->rate_ = *pos ; 
+	   jig->rate_idx_ =  0;
+	 }
+	jig->caplen_ = status->rs_data_len;
  	jig->snaplen_ = snaplen; // how to use these three fields ? 
  	jig->prev_errs_ = 95;
  	jig->fcs_ = 94;
  	jig->mac_time_= status->mactime; //epoch time when first bit arrives mac
 	jig->antenna_= status->antenna;
-	jig->rate_idx_= 91;
-	jig->rate_ = 90;
-	if (status->flag & RX_FLAG_HT) {
-	//HT packet hence will have a rate index
-          jig->rate_idx_ = 1; //status->rate_idx;
-        } else {
-       	  jig->rate_ = 1; // rate->bitrate / 5;
-        }
  
 	/* radiotap header, set always present flags 
 	rthdr->it_present =
@@ -432,7 +455,7 @@ ieee80211_add_rx_radiotap_header_jigs(struct ieee80211_local *local,
 		rthdr->it_present |= cpu_to_le32(1 << IEEE80211_RADIOTAP_RATE);
 		*pos = rate->bitrate / 5;
 	}
-	pos++;
+	pos++tatus->rate_idx
 
 	// IEEE80211_RADIOTAP_CHANNEL 
 	put_unaligned_le16(status->freq, pos);
@@ -630,9 +653,6 @@ ieee80211_rx_monitor_jigs(struct ieee80211_local *local, struct sk_buff *origskb
 
 	return origskb;
 }
-
-
-
 
 #endif /*JIGS*/
 
